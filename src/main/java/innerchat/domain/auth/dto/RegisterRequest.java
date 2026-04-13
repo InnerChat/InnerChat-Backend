@@ -3,16 +3,15 @@ package innerchat.domain.auth.dto;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.ToString;
 
 @Getter
 @NoArgsConstructor
 @AllArgsConstructor
-@ToString
-public class LoginResponse {
+public class RegisterRequest {
 
-    private Long userId;
     private String loginId;
+    private String password;
     private String userName;
-
+    private String role;
+    private String status;
 }

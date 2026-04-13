@@ -16,6 +16,7 @@ public class User {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "user_id")
     private Long id;
 
     @Column(nullable = false, unique = true, length = 50)
@@ -27,8 +28,24 @@ public class User {
     @Column(nullable = false, length = 100)
     private String userName;
 
+    @Column(nullable = false, length = 20)
+    private String role;
+
+    @Column(nullable = false, length = 20)
+    private String status;
+
     @Column(nullable = false)
     private LocalDateTime createdAt;
+
+    public static User create(String loginId, String encodedPassword, String userName, String role, String status) {
+        User user = new User();
+        user.loginId = loginId;
+        user.passwordHash = encodedPassword;
+        user.userName = userName;
+        user.role = role;
+        user.status = status;
+        return user;
+    }
 
     @PrePersist
     public void prePersist() {

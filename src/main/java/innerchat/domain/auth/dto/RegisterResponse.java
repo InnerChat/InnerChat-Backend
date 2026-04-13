@@ -9,10 +9,10 @@ import lombok.ToString;
 @NoArgsConstructor
 @AllArgsConstructor
 @ToString
-public class LoginResponse {
+public class RegisterResponse {
 
-    private Long userId;
     private String loginId;
     private String userName;
-
+    private String role;
+    private String status;
 }
