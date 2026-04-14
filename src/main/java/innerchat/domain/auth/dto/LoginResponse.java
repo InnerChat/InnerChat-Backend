@@ -1,5 +1,6 @@
 package innerchat.domain.auth.dto;
 
+import innerchat.domain.user.entity.UserRole;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -12,7 +13,7 @@ import lombok.ToString;
 public class LoginResponse {
 
     private Long userId;
-    private String loginId;
     private String userName;
+    private UserRole role;
 
 }

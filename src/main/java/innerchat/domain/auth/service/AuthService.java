@@ -5,7 +5,9 @@ import innerchat.domain.auth.dto.RegisterRequest;
 import innerchat.domain.auth.dto.RegisterResponse;
 import innerchat.domain.auth.session.SessionConst;
 import innerchat.domain.user.entity.User;
+import innerchat.domain.user.entity.UserRole;
 import innerchat.domain.user.repository.UserRepository;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -27,8 +29,7 @@ public class AuthService {
         String loginId = request.getLoginId();
         String password = request.getPassword();
         String userName = request.getUserName();
-        String role = request.getRole();
-        String status = request.getStatus();
+        UserRole userRole = request.getUserRole();
 
         if (loginId == null || loginId.isBlank() || password == null || password.isBlank() || userName == null || userName.isBlank()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "loginId/password/userName은 필수입니다.");
@@ -38,30 +39,39 @@ public class AuthService {
         }
 
         String encodedPassword = passwordEncoder.encode(password);
-        User user = User.create(loginId, encodedPassword, userName, role, status);
+        User user = new User(loginId, encodedPassword, userName, userRole);
         userRepository.save(user);
         return new RegisterResponse(user.getLoginId(), user.getUserName(), user.getRole(), user.getStatus());
     }
 
     @Transactional
-    public LoginResponse login(String id, String password, HttpSession session) {
-        if (id == null || id.isBlank() || password == null || password.isBlank()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "id/password는 필수입니다.");
+    public LoginResponse login(String loginId, String password, HttpServletRequest httpRequest) {
+        if (loginId == null || loginId.isBlank() || password == null || password.isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "loginId/password는 필수입니다.");
         }
 
-        User user = userRepository.findByLoginId(id)
+        User user = userRepository.findByLoginId(loginId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "아이디 또는 비밀번호가 올바르지 않습니다."));
 
         if (!passwordEncoder.matches(password, user.getPasswordHash())) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "아이디 또는 비밀번호가 올바르지 않습니다.");
         }
 
-        session.setAttribute(SessionConst.LOGIN_USER_ID, user.getId());
-        return new LoginResponse(user.getId(), user.getLoginId(), user.getUserName());
+        HttpSession previousSession = httpRequest.getSession(false);
+        if (previousSession != null) {
+            previousSession.invalidate();
+        }
+
+        HttpSession newSession = httpRequest.getSession(true);
+        newSession.setAttribute(SessionConst.LOGIN_USER_ID, user.getUserId());
+
+        return new LoginResponse(user.getUserId(), user.getUserName(), user.getRole());
     }
 
     @Transactional
     public void logout(HttpSession session) {
-        session.invalidate();
+        if (session != null) {
+            session.invalidate();
+        }
     }
 }

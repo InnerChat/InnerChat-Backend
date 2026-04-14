@@ -3,6 +3,7 @@ package innerchat.domain.auth.controller;
 import innerchat.domain.auth.dto.RegisterRequest;
 import innerchat.domain.auth.dto.RegisterResponse;
 import innerchat.domain.auth.service.AuthService;
+import innerchat.domain.user.entity.UserRole;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -34,7 +35,7 @@ public class AuthControllerIntegrationTest {
     AuthService authService;
 
     private RegisterRequest defaultRegisterRequest () {
-        return new RegisterRequest("ssm", "1", "신상민", "ADMIN", "ACTIVE");
+        return new RegisterRequest("ssm", "1", "신상민", UserRole.ADMIN);
     }
 
     //회원가입 성공 -> 200

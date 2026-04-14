@@ -5,7 +5,9 @@ import innerchat.domain.auth.dto.RegisterRequest;
 import innerchat.domain.auth.dto.RegisterResponse;
 import innerchat.domain.auth.session.SessionConst;
 import innerchat.domain.user.entity.User;
+import innerchat.domain.user.entity.UserRole;
 import innerchat.domain.user.repository.UserRepository;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Test;
@@ -14,6 +16,7 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpSession;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.transaction.annotation.Transactional;
@@ -36,7 +39,7 @@ class AuthServiceTest {
     @Autowired AuthService authService;
 
     private RegisterRequest defaultRegisterRequest () {
-        return new RegisterRequest("ssm", "1", "신상민", "ADMIN", "ACTIVE");
+        return new RegisterRequest("ssm1", "1", "신상민", UserRole.ADMIN);
     }
 
     // 등록
@@ -59,10 +62,18 @@ class AuthServiceTest {
     //로그인 성공
     @Test
     void login_success() {
-        MockHttpSession session = new MockHttpSession();
-        LoginResponse loginResponse = authService.login("ssm", "1", session);
+        //given
+        authService.register(defaultRegisterRequest());
+        MockHttpServletRequest mockRequest = new MockHttpServletRequest();
 
-        assertThat(session.getAttribute(SessionConst.LOGIN_USER_ID)).isEqualTo(loginResponse.getLoginId());
+        //when
+        LoginResponse loginResponse = authService.login("ssm", "1", mockRequest);
+
+        //then
+        assertThat(loginResponse.getUserName()).isEqualTo("신상민"); //user 이름 검증
+        assertThat(mockRequest.getSession(false)).isNotNull(); // session 여부 체크
+        assertThat(mockRequest.getSession(false).getAttribute(SessionConst.LOGIN_USER_ID))
+                .isEqualTo(loginResponse.getUserId()); // 세션의 로그인 userId와 로그인 응답객체 userId 검증
     }
 
 

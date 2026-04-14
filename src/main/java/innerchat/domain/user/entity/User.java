@@ -16,8 +16,10 @@ public class User {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "user_id")
-    private Long id;
+    private Long userId;
+
+    @Column(nullable = false)
+    private Long workspaceId;
 
     @Column(nullable = false, unique = true, length = 50)
     private String loginId;
@@ -25,29 +27,28 @@ public class User {
     @Column(nullable = false)
     private String passwordHash;
 
-    @Column(nullable = false, length = 100)
+    @Column(nullable = false, length = 50)
     private String userName;
 
     @Column(nullable = false, length = 20)
-    private String role;
+    @Enumerated(EnumType.STRING)
+    private UserRole role;
 
     @Column(nullable = false, length = 20)
-    private String status;
-
-    @Column(nullable = false)
-    private Long workspaceId;
+    @Enumerated(EnumType.STRING)
+    private UserStatus status;
 
     @Column(nullable = false)
     private LocalDateTime createdAt;
 
-    public static User create(String loginId, String encodedPassword, String userName, String role, String status) {
-        User user = new User();
-        user.loginId = loginId;
-        user.passwordHash = encodedPassword;
-        user.userName = userName;
-        user.role = role;
-        user.status = status;
-        return user;
+    public User(String loginId,
+                String passwordHash,
+                String userName,
+                UserRole role) {
+        this.loginId = loginId;
+        this.passwordHash = passwordHash;
+        this.userName = userName;
+        this.role = role;
     }
 
     @PrePersist
@@ -55,6 +56,11 @@ public class User {
         if (createdAt == null) {
             createdAt = LocalDateTime.now();
         }
+
+        if (status == null) {
+            status = UserStatus.ACTIVE;
+        }
+
         if (workspaceId == null) {
             workspaceId = 2L;
         }

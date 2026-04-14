@@ -3,6 +3,8 @@ package innerchat.domain.auth.controller;
 import innerchat.domain.auth.dto.RegisterRequest;
 import innerchat.domain.auth.dto.RegisterResponse;
 import innerchat.domain.auth.service.AuthService;
+import innerchat.domain.user.entity.UserRole;
+import innerchat.domain.user.entity.UserStatus;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
@@ -32,14 +34,14 @@ public class AuthControllerTest {
     @MockitoBean AuthService authService;
 
     public RegisterRequest newRegisterRequest() {
-        return new RegisterRequest("ssm", "1", "신상민", "ADMIN", "ACTIVE");
+        return new RegisterRequest("ssm", "1", "신상민", UserRole.ADMIN);
     }
 
     //회원가입
     @Test
     void register_return200() throws Exception {
         RegisterRequest request = newRegisterRequest();
-        RegisterResponse response = new RegisterResponse("ssm", "신상민", "ADMIN", "ACTIVE");
+        RegisterResponse response = new RegisterResponse("ssm", "신상민", UserRole.ADMIN, UserStatus.ACTIVE);
         given(authService.register(any())).willReturn(response);
 
         mockMvc.perform(post("/auth/register")
