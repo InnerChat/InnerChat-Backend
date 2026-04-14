@@ -67,7 +67,7 @@ class AuthServiceTest {
         MockHttpServletRequest mockRequest = new MockHttpServletRequest();
 
         //when
-        LoginResponse loginResponse = authService.login("ssm", "1", mockRequest);
+        LoginResponse loginResponse = authService.login("ssm", "1");
 
         //then
         assertThat(loginResponse.getUserName()).isEqualTo("신상민"); //user 이름 검증
