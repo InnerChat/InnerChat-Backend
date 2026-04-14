@@ -35,6 +35,9 @@ public class User {
     private String status;
 
     @Column(nullable = false)
+    private Long workspaceId;
+
+    @Column(nullable = false)
     private LocalDateTime createdAt;
 
     public static User create(String loginId, String encodedPassword, String userName, String role, String status) {
@@ -51,6 +54,9 @@ public class User {
     public void prePersist() {
         if (createdAt == null) {
             createdAt = LocalDateTime.now();
+        }
+        if (workspaceId == null) {
+            workspaceId = 2L;
         }
     }
 
