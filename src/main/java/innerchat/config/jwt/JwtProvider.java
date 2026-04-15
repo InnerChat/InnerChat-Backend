@@ -47,6 +47,7 @@ public class JwtProvider {
                 .claim("role", role.name())
                 .issuedAt(new Date())
                 .expiration(new Date(System.currentTimeMillis() + accessExpiration))
+                .signWith(key)
                 .compact();
     }
 

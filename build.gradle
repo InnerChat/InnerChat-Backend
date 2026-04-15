@@ -51,7 +51,6 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-data-redis'
     implementation 'org.springframework.security:spring-security-crypto'
     implementation 'org.springframework.boot:spring-boot-starter-actuator'
-    implementation 'org.springframework.boot:spring-boot-starter-websocket'
     implementation 'com.querydsl:querydsl-jpa:5.1.0:jakarta'
 
     //JWT

@@ -9,7 +9,6 @@ import lombok.ToString;
 @Getter
 @NoArgsConstructor
 @AllArgsConstructor
-@ToString
 public class LoginResponse {
 
     private Long userId;
