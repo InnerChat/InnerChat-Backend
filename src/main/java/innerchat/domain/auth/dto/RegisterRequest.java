@@ -4,17 +4,14 @@ import innerchat.domain.user.entity.UserRole;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.ToString;
 
 @Getter
 @NoArgsConstructor
 @AllArgsConstructor
-public class LoginResponse {
+public class RegisterRequest {
 
-    private Long userId;
+    private String loginId;
+    private String password;
     private String userName;
-    private UserRole role;
-    private String accessToken;
-    private String refreshToken;
-
+    private UserRole userRole;
 }

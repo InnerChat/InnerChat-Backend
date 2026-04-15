@@ -28,7 +28,12 @@ configurations {
 def generated = 'src/main/generated'
 
 sourceSets {
-    main.java.srcDirs += [generated]
+    main {
+        java {
+            srcDirs += [generated]
+            exclude 'innerchat/domain/dm/**'
+        }
+    }
 }
 
 tasks.withType(JavaCompile).configureEach {
@@ -42,12 +47,16 @@ clean {
 dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
     implementation 'org.springframework.boot:spring-boot-starter-webmvc'
+    implementation 'org.springframework.boot:spring-boot-starter-websocket'
     implementation 'org.springframework.boot:spring-boot-starter-data-redis'
-    implementation 'org.springframework.session:spring-session-data-redis'
     implementation 'org.springframework.security:spring-security-crypto'
     implementation 'org.springframework.boot:spring-boot-starter-actuator'
-    implementation 'org.springframework.boot:spring-boot-starter-websocket'
     implementation 'com.querydsl:querydsl-jpa:5.1.0:jakarta'
+
+    //JWT
+    implementation 'io.jsonwebtoken:jjwt-api:0.12.6'
+    runtimeOnly    'io.jsonwebtoken:jjwt-jackson:0.12.6'
+    runtimeOnly    'io.jsonwebtoken:jjwt-impl:0.12.6'
 
     compileOnly 'org.projectlombok:lombok'
     runtimeOnly 'org.postgresql:postgresql'

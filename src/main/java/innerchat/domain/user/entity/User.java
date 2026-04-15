@@ -1,6 +1,7 @@
 package innerchat.domain.user.entity;
 
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
@@ -8,6 +9,7 @@ import java.time.LocalDateTime;
 
 @Getter
 @NoArgsConstructor
+@AllArgsConstructor
 @Entity
 @Table(name = "users")
 public class User {
@@ -39,12 +41,10 @@ public class User {
     @Column(nullable = false)
     private LocalDateTime createdAt;
 
-    public User(Long workspaceId,
-                String loginId,
+    public User(String loginId,
                 String passwordHash,
                 String userName,
                 UserRole role) {
-        this.workspaceId = workspaceId;
         this.loginId = loginId;
         this.passwordHash = passwordHash;
         this.userName = userName;
@@ -59,6 +59,10 @@ public class User {
 
         if (status == null) {
             status = UserStatus.ACTIVE;
+        }
+
+        if (workspaceId == null) {
+            workspaceId = 2L;
         }
     }
 
