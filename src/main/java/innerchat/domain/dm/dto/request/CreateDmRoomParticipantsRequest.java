@@ -1,5 +1,4 @@
-package innerchat.domain.dm.dto.response;
-
+package innerchat.domain.dm.dto.request;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -10,11 +9,9 @@ import java.util.List;
 @Getter
 @NoArgsConstructor
 @AllArgsConstructor
-public class ReadDmRoomListResponse {
+public class CreateDmRoomParticipantsRequest {
 
     Long dmRoomId;
-    List<String> participantNameList;
-    Long lastMessageId;
-    Long unreadCount;
-
+    List<Long> userIdList;
+    
 }

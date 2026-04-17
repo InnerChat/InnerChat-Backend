@@ -4,11 +4,13 @@ import innerchat.domain.common.entity.MessageStatus;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 import java.time.LocalDateTime;
 
 @Entity
 @Getter
+@Setter
 @NoArgsConstructor
 @Table(name = "dm_messages")
 public class DmMessage {
@@ -47,6 +49,18 @@ public class DmMessage {
         this.dmRoomId = dmRoomId;
         this.authorId = authorId;
         this.content = content;
+    }
+
+    public DmMessage(Long workspaceId,
+                     Long dmRoomId,
+                     Long authorId,
+                     String content,
+                     Long threadRootMessageId) {
+        this.workspaceId = workspaceId;
+        this.dmRoomId = dmRoomId;
+        this.authorId = authorId;
+        this.content = content;
+        this.threadRootMessageId = threadRootMessageId;
     }
 
     @PrePersist

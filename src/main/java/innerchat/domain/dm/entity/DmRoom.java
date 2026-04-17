@@ -45,5 +45,8 @@ public class DmRoom {
         if (createdAt == null) {
             createdAt = LocalDateTime.now();
         }
+        if (lastMessageId == null) {
+            lastMessageId = 0L;
+        }
     }
 }
