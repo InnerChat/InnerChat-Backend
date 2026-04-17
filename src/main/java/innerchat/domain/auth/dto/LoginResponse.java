@@ -12,6 +12,7 @@ import lombok.ToString;
 public class LoginResponse {
 
     private Long userId;
+    private String loginId;
     private String userName;
     private UserRole role;
     private String accessToken;

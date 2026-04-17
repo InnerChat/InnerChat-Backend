@@ -61,7 +61,7 @@ public class AuthService {
 
         String accessToken = jwtProvider.generateAccessToken(user.getUserId(), user.getRole());
         String refreshToken = jwtProvider.generateRefreshToken(user.getUserId());
-        return new LoginResponse(user.getUserId(), user.getUserName(), user.getRole(), accessToken, refreshToken);
+        return new LoginResponse(user.getUserId(), user.getLoginId(), user.getUserName(), user.getRole(), accessToken, refreshToken);
     }
 
     @Transactional
@@ -84,6 +84,6 @@ public class AuthService {
 
         String newAccessToken = jwtProvider.generateAccessToken(userId, user.getRole());
         String newRefreshToken = jwtProvider.generateRefreshToken(userId);
-        return new LoginResponse(userId, user.getUserName(), user.getRole(), newAccessToken, newRefreshToken);
+        return new LoginResponse(userId, user.getLoginId(), user.getUserName(), user.getRole(), newAccessToken, newRefreshToken);
     }
 }
