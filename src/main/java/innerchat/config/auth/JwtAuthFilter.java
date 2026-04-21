@@ -14,17 +14,21 @@ import java.util.List;
 @RequiredArgsConstructor
 public class JwtAuthFilter extends OncePerRequestFilter {
 
-    private final JwtProvider jwtProvider;
-
     private static final List<String> EXCLUDED_PATHS = List.of(
             "/api/v1/auth/login",
             "/api/v1/auth/register",
-            "/api/v1/auth/refresh"
+            "/api/v1/auth/refresh",
+            "/api/v1/ws"
     );
+    private final JwtProvider jwtProvider;
 
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
         String uri = request.getRequestURI();
+        if ("OPTIONS".equalsIgnoreCase(request.getMethod())) {
+            return true;
+        }
+
         return EXCLUDED_PATHS.stream().anyMatch(uri::startsWith);
     }
 

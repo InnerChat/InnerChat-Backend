@@ -20,7 +20,6 @@ public class DmFileAttachment {
     @Column(nullable = false)
     private String originalName;
 
-    @Lob
     @Column(nullable = false, length = 500)
     private String storedPath;
 

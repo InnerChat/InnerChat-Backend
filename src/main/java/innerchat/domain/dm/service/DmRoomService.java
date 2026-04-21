@@ -1,5 +1,6 @@
 package innerchat.domain.dm.service;
 
+import innerchat.domain.dm.dto.DmRoomListNativeProjection;
 import innerchat.domain.dm.dto.request.CreateDmRoomParticipantsRequest;
 import innerchat.domain.dm.dto.request.CreateDmRoomRequest;
 import innerchat.domain.dm.dto.request.DeleteDmRoomParticipantsRequest;
@@ -17,6 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -30,7 +32,28 @@ public class DmRoomService {
 
     @Transactional(readOnly = true)
     public List<ReadDmRoomListResponse> getDmRoomList(Long userId) {
-        return dmRoomRepositry.getDmRoomList(userId);
+        List<DmRoomListNativeProjection> list = dmRoomRepositry.getDmRoomListNative(userId);
+
+        List<ReadDmRoomListResponse> resp = new ArrayList<>();
+        for (DmRoomListNativeProjection row : list) {
+            String raw = row.getParticipantNameListRaw();
+
+            List<String> participantNameList = (raw == null || raw.isBlank())
+                    ? List.of()
+                    : Arrays.stream(raw.split(","))
+                    .map(String::trim)
+                    .filter(s -> !s.isEmpty())
+                    .toList();
+
+            resp.add(new ReadDmRoomListResponse(
+                    row.getDmRoomId(),
+                    participantNameList,
+                    row.getLastMessageId(),
+                    row.getUnreadCount()
+            ));
+        }
+
+        return resp;
     }
 
     public CreateDmRoomResponse saveDmRoom(CreateDmRoomRequest req) {
@@ -100,10 +123,10 @@ public class DmRoomService {
         }
     }
 
-    public void setLastReadDmMessage(UpdateLastReadDmMessageRequest req) {
+    public void setLastReadDmMessage(Long userId, UpdateLastReadDmMessageRequest req) {
         DmRoom dmRoom = dmRoomRepositry.findById(req.getDmRoomId())
                 .orElseThrow(() -> new RuntimeException("해당 채팅방이 존재하지 않습니다"));
-        DmParticipant dmParticipant = dmParticipantRepository.findByUserIdAndDmRoomId(req.getUserId(), req.getDmRoomId());
+        DmParticipant dmParticipant = dmParticipantRepository.findByUserIdAndDmRoomId(userId, req.getDmRoomId());
 
         dmParticipant.setLastReadMessageId(dmRoom.getLastMessageId());
     }
@@ -118,8 +141,8 @@ public class DmRoomService {
         dmParticipantRepository.saveAll(list);
     }
 
-    public void removeDmRoomParticipants(DeleteDmRoomParticipantsRequest req) {
-        DmParticipant participant = dmParticipantRepository.findByUserIdAndDmRoomId(req.getUserId(), req.getDmRoomId());
+    public void removeDmRoomParticipants(Long userId, DeleteDmRoomParticipantsRequest req) {
+        DmParticipant participant = dmParticipantRepository.findByUserIdAndDmRoomId(userId, req.getDmRoomId());
 
         participant.setStatus(false);
     }

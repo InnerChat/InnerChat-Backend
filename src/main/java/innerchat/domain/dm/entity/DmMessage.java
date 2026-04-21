@@ -20,18 +20,15 @@ public class DmMessage {
     private Long dmMessageId;
 
     @Column(nullable = false)
-    private Long workspaceId;
-
-    @Column(nullable = false)
     private Long dmRoomId;
 
+    @Column
     private Long threadRootMessageId;
 
     @Column(nullable = false)
     private Long authorId;
 
-    @Lob
-    @Column(nullable = false)
+    @Column(nullable = false, columnDefinition = "TEXT")
     private String content;
 
     @Column(nullable = false)
@@ -41,22 +38,18 @@ public class DmMessage {
     @Column(nullable = false)
     private LocalDateTime createdAt;
 
-    public DmMessage(Long workspaceId,
-                     Long dmRoomId,
+    public DmMessage(Long dmRoomId,
                      Long authorId,
                      String content) {
-        this.workspaceId = workspaceId;
         this.dmRoomId = dmRoomId;
         this.authorId = authorId;
         this.content = content;
     }
 
-    public DmMessage(Long workspaceId,
-                     Long dmRoomId,
+    public DmMessage(Long dmRoomId,
                      Long authorId,
                      String content,
                      Long threadRootMessageId) {
-        this.workspaceId = workspaceId;
         this.dmRoomId = dmRoomId;
         this.authorId = authorId;
         this.content = content;

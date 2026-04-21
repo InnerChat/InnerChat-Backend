@@ -1,6 +1,5 @@
 package innerchat.domain.dm.controller;
 
-import innerchat.domain.dm.dto.request.CreateDmMessageRequest;
 import innerchat.domain.dm.dto.request.ReadDmMessageCursorRequest;
 import innerchat.domain.dm.dto.response.ReadDmMessageCursorResponse;
 import innerchat.domain.dm.service.DmMessageService;
@@ -21,11 +20,5 @@ public class DmMessageController {
             @ModelAttribute ReadDmMessageCursorRequest req
     ) {
         return ResponseEntity.ok(dmMessageService.readDmMessages(dmRoomId, req.getCursor()));
-    }
-
-    @PostMapping
-    public ResponseEntity<Void> createDmMessage(@RequestBody CreateDmMessageRequest req) {
-        dmMessageService.createDmMessage(req);
-        return ResponseEntity.ok().build();
     }
 }

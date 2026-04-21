@@ -1,5 +1,6 @@
 package innerchat.domain.dm.controller;
 
+import innerchat.config.auth.AuthPrincipal;
 import innerchat.domain.dm.dto.request.CreateDmRoomParticipantsRequest;
 import innerchat.domain.dm.dto.request.CreateDmRoomRequest;
 import innerchat.domain.dm.dto.request.DeleteDmRoomParticipantsRequest;
@@ -21,7 +22,7 @@ public class DmRoomController {
     private final DmRoomService dmRoomService;
 
     @GetMapping
-    public ResponseEntity<List<ReadDmRoomListResponse>> getDmRoomList(@RequestParam Long userId) {
+    public ResponseEntity<List<ReadDmRoomListResponse>> getDmRoomList(@AuthPrincipal Long userId) {
         return ResponseEntity.ok(dmRoomService.getDmRoomList(userId));
     }
 
@@ -31,8 +32,8 @@ public class DmRoomController {
     }
 
     @PutMapping("/read")
-    public ResponseEntity<Void> setLastReadDmMessage(@RequestBody UpdateLastReadDmMessageRequest req) {
-        dmRoomService.setLastReadDmMessage(req);
+    public ResponseEntity<Void> setLastReadDmMessage(@AuthPrincipal Long userId, @RequestBody UpdateLastReadDmMessageRequest req) {
+        dmRoomService.setLastReadDmMessage(userId, req);
         return ResponseEntity.ok().build();
     }
 
@@ -43,8 +44,8 @@ public class DmRoomController {
     }
 
     @DeleteMapping("/participants")
-    public ResponseEntity<Void> removeDmRoomParticipants(@RequestBody DeleteDmRoomParticipantsRequest req) {
-        dmRoomService.removeDmRoomParticipants(req);
+    public ResponseEntity<Void> removeDmRoomParticipants(@AuthPrincipal Long userId, @RequestBody DeleteDmRoomParticipantsRequest req) {
+        dmRoomService.removeDmRoomParticipants(userId, req);
         return ResponseEntity.ok().build();
     }
 }
