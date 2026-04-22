@@ -28,7 +28,6 @@ public class DmRoom {
     @Column(length = 64)
     private String dmPairKey;
 
-    @Column(nullable = false)
     private Long lastMessageId;
 
     @Column(nullable = false)
@@ -46,9 +45,6 @@ public class DmRoom {
     void prePersist() {
         if (createdAt == null) {
             createdAt = LocalDateTime.now();
-        }
-        if (lastMessageId == null) {
-            lastMessageId = 0L;
         }
     }
 }

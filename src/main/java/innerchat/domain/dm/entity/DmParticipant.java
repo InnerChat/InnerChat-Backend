@@ -27,7 +27,6 @@ public class DmParticipant {
     @Column(nullable = false)
     private LocalDateTime joinendAt;
 
-    @Column(nullable = false)
     private Long lastReadMessageId;
 
     @Column(nullable = false)
@@ -43,9 +42,7 @@ public class DmParticipant {
         if (joinendAt == null) {
             joinendAt = LocalDateTime.now();
         }
-        if (lastReadMessageId == null) {
-            lastReadMessageId = 0L;
-        }
+
         if (status == null) {
             status = true;
         }
