@@ -62,7 +62,7 @@ public class User {
         }
 
         if (workspaceId == null) {
-            workspaceId = 2L;
+            workspaceId = 1L;
         }
     }
 

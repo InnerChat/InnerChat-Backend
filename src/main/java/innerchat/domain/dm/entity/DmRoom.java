@@ -3,10 +3,12 @@ package innerchat.domain.dm.entity;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 import java.time.LocalDateTime;
 
 @Getter
+@Setter
 @Entity
 @NoArgsConstructor
 @Table(name = "dm_rooms")
@@ -26,7 +28,6 @@ public class DmRoom {
     @Column(length = 64)
     private String dmPairKey;
 
-    @Column(nullable = false)
     private Long lastMessageId;
 
     @Column(nullable = false)

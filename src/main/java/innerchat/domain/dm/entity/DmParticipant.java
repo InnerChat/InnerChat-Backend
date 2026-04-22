@@ -3,10 +3,12 @@ package innerchat.domain.dm.entity;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 import java.time.LocalDateTime;
 
 @Getter
+@Setter
 @NoArgsConstructor
 @Entity
 @Table(name = "dm_participants")
@@ -25,8 +27,10 @@ public class DmParticipant {
     @Column(nullable = false)
     private LocalDateTime joinendAt;
 
-    @Column(nullable = false)
     private Long lastReadMessageId;
+
+    @Column(nullable = false)
+    private Boolean status;
 
     public DmParticipant(Long dmRoomId, Long userId) {
         this.dmRoomId = dmRoomId;
@@ -37,6 +41,10 @@ public class DmParticipant {
     void prePersist() {
         if (joinendAt == null) {
             joinendAt = LocalDateTime.now();
+        }
+
+        if (status == null) {
+            status = true;
         }
     }
 }

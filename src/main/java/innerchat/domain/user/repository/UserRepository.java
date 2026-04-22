@@ -1,10 +1,11 @@
 package innerchat.domain.user.repository;
 
 import innerchat.domain.user.entity.User;
-import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
 
-public interface UserRepository extends JpaRepository<User, Long> {
+import java.util.Optional;
+
+public interface UserRepository extends JpaRepository<User, Long>, UserRepositoryCustom {
 
     Optional<User> findByLoginId(String loginId);
 
