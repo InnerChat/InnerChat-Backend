@@ -14,13 +14,18 @@ import innerchat.domain.dm.repository.DmRoomRepositry;
 import innerchat.domain.user.entity.User;
 import innerchat.domain.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
 @Service
+@Slf4j
 @RequiredArgsConstructor
 public class DmMessageService {
 
@@ -42,18 +47,20 @@ public class DmMessageService {
         List<ReadDmMessageResponse> messages;
         boolean hasNext = fetched.size() > DEFAULT_PAGE_SIZE;
         if (hasNext) {
-            messages = new ArrayList<>(fetched.subList(0, DEFAULT_PAGE_SIZE));
+            messages = new ArrayList<>(fetched.subList(1, DEFAULT_PAGE_SIZE + 1));
         } else {
             messages = new ArrayList<>(fetched);
         }
 
-        Long nextCursor = hasNext && !messages.isEmpty() ? messages.getLast().getDmMessageId() : -1;
+        Long nextCursor = hasNext && !messages.isEmpty() ? messages.getFirst().getDmMessageId() : -1;
         return new ReadDmMessageCursorResponse(messages, nextCursor, hasNext);
     }
 
     @Transactional
     public void sendDmMessage(Long userId, CreateDmMessageSocketRequest req) {
-        DmMessage saved = createAndPersistMessage(
+        log.info("DM send requested: senderUserId={}, dmRoomId={}, contentLength={}",
+                userId, req.getDmRoomId(), req.getContent() == null ? 0 : req.getContent().length());
+        MessagePersistResult persistResult = createAndPersistMessage(
                 req.getDmRoomId(),
                 userId,
                 req.getThreadRootMessageId(),
@@ -62,23 +69,40 @@ public class DmMessageService {
 
         String authorName = userRepository.findById(userId)
                 .map(User::getUserName)
-                .orElseThrow(() -> new IllegalStateException("작성자 정보가 없습니다. userId=" + userId));
+                .orElseThrow(() -> new IllegalStateException("Author not found. userId=" + userId));
 
         DmMessageCreatedEvent event = new DmMessageCreatedEvent(
                 req.getDmRoomId(),
-                saved.getDmMessageId(),
-                saved.getAuthorId(),
+                persistResult.message().getDmMessageId(),
+                persistResult.message().getAuthorId(),
                 authorName,
-                saved.getThreadRootMessageId(),
-                saved.getContent(),
-                saved.getStatus(),
-                saved.getCreatedAt()
+                persistResult.message().getThreadRootMessageId(),
+                persistResult.message().getContent(),
+                persistResult.message().getStatus(),
+                persistResult.message().getCreatedAt(),
+                persistResult.reopenedUserIdList()
         );
 
-        dmMessageRedisPublisher.publish(event);
+        log.info("DM message persisted: dmRoomId={}, dmMessageId={}, reopenedUserIds={}",
+                event.getDmRoomId(), event.getDmMessageId(), event.getReopenedUserIdList());
+        publishAfterCommit(event);
     }
 
-    private DmMessage createAndPersistMessage(
+    private void publishAfterCommit(DmMessageCreatedEvent event) {
+        if (!TransactionSynchronizationManager.isActualTransactionActive()) {
+            dmMessageRedisPublisher.publish(event);
+            return;
+        }
+
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCommit() {
+                dmMessageRedisPublisher.publish(event);
+            }
+        });
+    }
+
+    private MessagePersistResult createAndPersistMessage(
             Long dmRoomId,
             Long userId,
             Long threadRootMessageId,
@@ -87,8 +111,9 @@ public class DmMessageService {
         validateMessagePayload(dmRoomId, userId, content);
 
         DmRoom dmRoom = dmRoomRepositry.findById(dmRoomId)
-                .orElseThrow(() -> new IllegalArgumentException("채팅방이 존재하지 않습니다. dmRoomId=" + dmRoomId));
+                .orElseThrow(() -> new IllegalArgumentException("DM room not found. dmRoomId=" + dmRoomId));
 
+        List<Long> reopenedUserIdList = reopenInactiveParticipants(dmRoomId);
         DmMessage message = buildDmMessage(dmRoom, userId, content, threadRootMessageId);
         DmMessage saved = dmMessageRepository.save(message);
 
@@ -99,7 +124,27 @@ public class DmMessageService {
             sender.setLastReadMessageId(saved.getDmMessageId());
         }
 
-        return saved;
+        return new MessagePersistResult(saved, reopenedUserIdList);
+    }
+
+    private List<Long> reopenInactiveParticipants(Long dmRoomId) {
+        List<Long> reopenedUserIds = new ArrayList<>();
+        List<DmParticipant> participants = dmParticipantRepository.findAllByDmRoomId(dmRoomId);
+
+        for (DmParticipant participant : participants) {
+            if (Boolean.TRUE.equals(participant.getStatus())) {
+                continue;
+            }
+
+            participant.setStatus(true);
+            participant.setJoinendAt(LocalDateTime.now());
+            reopenedUserIds.add(participant.getUserId());
+        }
+
+        if (!reopenedUserIds.isEmpty()) {
+            log.info("DM participants reopened: dmRoomId={}, reopenedUserIds={}", dmRoomId, reopenedUserIds);
+        }
+        return reopenedUserIds;
     }
 
     private DmMessage buildDmMessage(
@@ -126,16 +171,19 @@ public class DmMessageService {
             String content
     ) {
         if (dmRoomId == null || userId == null) {
-            throw new IllegalArgumentException("dmRoomId/userId는 필수입니다.");
+            throw new IllegalArgumentException("dmRoomId/userId is required");
         }
 
         if (content == null || content.isBlank()) {
-            throw new IllegalArgumentException("메시지 본문은 비어 있을 수 없습니다.");
+            throw new IllegalArgumentException("Message content must not be blank");
         }
 
         boolean isParticipant = dmParticipantRepository.existsByDmRoomIdAndUserIdAndStatusTrue(dmRoomId, userId);
         if (!isParticipant) {
-            throw new IllegalArgumentException("채팅방 참여자가 아닙니다.");
+            throw new IllegalArgumentException("User is not an active participant of this DM room");
         }
+    }
+
+    private record MessagePersistResult(DmMessage message, List<Long> reopenedUserIdList) {
     }
 }
