@@ -6,6 +6,7 @@ import innerchat.domain.dm.dto.request.CreateDmRoomRequest;
 import innerchat.domain.dm.dto.request.DeleteDmRoomParticipantsRequest;
 import innerchat.domain.dm.dto.request.UpdateLastReadDmMessageRequest;
 import innerchat.domain.dm.dto.response.CreateDmRoomResponse;
+import innerchat.domain.dm.dto.response.DmInboxEvent;
 import innerchat.domain.dm.dto.response.ReadDmRoomListResponse;
 import innerchat.domain.dm.entity.DmParticipant;
 import innerchat.domain.dm.entity.DmRoom;
@@ -13,8 +14,12 @@ import innerchat.domain.dm.entity.DmRoomType;
 import innerchat.domain.dm.repository.DmParticipantRepository;
 import innerchat.domain.dm.repository.DmRoomRepositry;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -22,6 +27,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional
@@ -29,6 +35,7 @@ public class DmRoomService {
 
     private final DmRoomRepositry dmRoomRepositry;
     private final DmParticipantRepository dmParticipantRepository;
+    private final SimpMessagingTemplate messagingTemplate;
 
     @Transactional(readOnly = true)
     public List<ReadDmRoomListResponse> getDmRoomList(Long userId) {
@@ -79,7 +86,8 @@ public class DmRoomService {
 
         Long existingDmRoomId = dmRoomRepositry.findDmRoomIdByTypeAndPairKey(dmRoomType, pairKey).orElse(null);
         if (existingDmRoomId != null) {
-            reOpenParticipants(existingDmRoomId, normalizedParticipantIds);
+            List<Long> reopenedUserIdList = reOpenParticipants(existingDmRoomId, normalizedParticipantIds);
+            publishReopenedInboxEventAfterCommit(existingDmRoomId, reopenedUserIdList);
             return new CreateDmRoomResponse(existingDmRoomId);
         }
 
@@ -100,14 +108,16 @@ public class DmRoomService {
         return new CreateDmRoomResponse(savedRoom.getDmRoomId());
     }
 
-    private void reOpenParticipants(Long dmRoomId, List<Long> participantIds) {
+    private List<Long> reOpenParticipants(Long dmRoomId, List<Long> participantIds) {
         List<DmParticipant> toSave = new ArrayList<>();
+        List<Long> reopenedUserIdList = new ArrayList<>();
 
         for (Long userId : participantIds) {
             DmParticipant participant = dmParticipantRepository.findByUserIdAndDmRoomId(userId, dmRoomId);
 
             if (participant == null) {
                 toSave.add(new DmParticipant(dmRoomId, userId));
+                reopenedUserIdList.add(userId);
                 continue;
             }
 
@@ -115,12 +125,52 @@ public class DmRoomService {
                 participant.setStatus(true);
                 participant.setJoinendAt(LocalDateTime.now());
                 toSave.add(participant);
+                reopenedUserIdList.add(userId);
             }
         }
 
         if (!toSave.isEmpty()) {
             dmParticipantRepository.saveAll(toSave);
         }
+
+        return reopenedUserIdList;
+    }
+
+    private void publishReopenedInboxEventAfterCommit(Long dmRoomId, List<Long> reopenedUserIdList) {
+        if (reopenedUserIdList == null || reopenedUserIdList.isEmpty()) {
+            return;
+        }
+
+        Runnable publishTask = () -> {
+            DmInboxEvent reopenedEvent = new DmInboxEvent(
+                    "DM_ROOM_REOPENED",
+                    dmRoomId,
+                    null,
+                    null
+            );
+
+            for (Long reopenedUserId : reopenedUserIdList) {
+                messagingTemplate.convertAndSendToUser(
+                        reopenedUserId.toString(),
+                        "/queue/dm/events",
+                        reopenedEvent
+                );
+                log.info("DM inbox send by pairKey reopen: targetUserId={}, dmRoomId={}",
+                        reopenedUserId, dmRoomId);
+            }
+        };
+
+        if (!TransactionSynchronizationManager.isActualTransactionActive()) {
+            publishTask.run();
+            return;
+        }
+
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCommit() {
+                publishTask.run();
+            }
+        });
     }
 
     public void setLastReadDmMessage(Long userId, UpdateLastReadDmMessageRequest req) {
