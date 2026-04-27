@@ -1,5 +1,6 @@
 package innerchat.domain.channel.service;
 
+import innerchat.domain.channel.dto.ChannelMemberResponse;
 import innerchat.domain.channel.dto.CreateChannelRequest;
 import innerchat.domain.channel.dto.CreateChannelResponse;
 import innerchat.domain.channel.dto.ReadChannelListResponse;
@@ -7,10 +8,10 @@ import innerchat.domain.channel.entity.Channel;
 import innerchat.domain.channel.entity.ChannelMember;
 import innerchat.domain.channel.repository.ChannelMemberRepository;
 import innerchat.domain.channel.repository.ChannelRepository;
+import innerchat.domain.user.repository.UserRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.HttpStatusCode;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -23,6 +24,9 @@ public class ChannelService {
 
     private final ChannelRepository channelRepository;
     private final ChannelMemberRepository channelMemberRepository;
+    private final UserRepository userRepository;
+
+
 
     /**
      * 채널 전체 목록 가져오기
@@ -34,6 +38,7 @@ public class ChannelService {
                         channel.getChannelId(),
                         channel.getName(),
                         channel.getDescription(),
+                        channel.getType(),
                         channel.getOwnerId(),
                         channelMemberRepository.countByChannelId(channel.getChannelId()),
                         channelMemberRepository.existsByChannelIdAndUserId(channel.getChannelId(), userId)
@@ -54,7 +59,7 @@ public class ChannelService {
         if (channelRepository.existsByName(request.getChannelName())) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "이미 존재하는 채널 이름입니다.");
         }
-        Channel saved = channelRepository.save(new Channel(request.getChannelName(), request.getDescription(), userId));
+        Channel saved = channelRepository.save(new Channel(request.getChannelName(), request.getDescription(), userId, request.getType()));
 
         //생성자는 맴버로 자동 등록
         channelMemberRepository.save(new ChannelMember(saved.getChannelId(), userId));
@@ -92,6 +97,17 @@ public class ChannelService {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "이미 참가한 채널 입니다.");
         }
         channelMemberRepository.save(new ChannelMember(channelId, userId));
+    }
+
+    public List<ChannelMemberResponse> getChannelMembers(Long channelId) {
+        List<Long> userIds = channelMemberRepository.findAllByChannelId(channelId)
+                .stream()
+                .map(ChannelMember::getUserId)
+                .toList();
+        return userRepository.findAllById(userIds)
+                .stream()
+                .map(user -> new ChannelMemberResponse(user.getUserId(), user.getUserName()))
+                .toList();
     }
 
     public void inviteChannel(Long inviterId, Long channelId, Long targetUserId) {
