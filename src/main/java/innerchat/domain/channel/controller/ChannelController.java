@@ -1,6 +1,7 @@
 package innerchat.domain.channel.controller;
 
 import innerchat.config.auth.AuthPrincipal;
+import innerchat.domain.channel.dto.ChannelMemberResponse;
 import innerchat.domain.channel.dto.CreateChannelRequest;
 import innerchat.domain.channel.dto.CreateChannelResponse;
 import innerchat.domain.channel.dto.InviteChannelRequest;
@@ -45,6 +46,11 @@ public class ChannelController {
     public ResponseEntity<Void> joinChannel(@AuthPrincipal Long userId, @PathVariable Long channelId) {
         channelService.joinChannel(userId, channelId);
         return ResponseEntity.ok().build();
+    }
+
+    @GetMapping("/{channelId}/members")
+    public ResponseEntity<List<ChannelMemberResponse>> getChannelMembers(@PathVariable Long channelId) {
+        return ResponseEntity.ok(channelService.getChannelMembers(channelId));
     }
 
     @PostMapping("/{channelId}/invite")

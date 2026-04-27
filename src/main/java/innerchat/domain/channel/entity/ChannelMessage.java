@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.aspectj.bridge.Message;
 
 import java.time.LocalDateTime;
 
@@ -30,17 +31,28 @@ public class ChannelMessage {
     @Column(nullable = false, columnDefinition = "TEXT")
     private String content;
 
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
-    private String status;
+    private ChannelMessageStatus status;
 
     @Column(nullable = false)
     private LocalDateTime createdAt;
 
-    public ChannelMessage(Long channelId, Long authorId, String content, String status) {
+    public ChannelMessage(Long channelId, Long authorId, String content, ChannelMessageStatus status) {
         this.channelId = channelId;
         this.authorId = authorId;
         this.content = content;
         this.status = status;
+    }
+
+    public static ChannelMessage of(Long ChannelId, Long authorId, String content, Long threadRootMessageId) {
+        ChannelMessage msg = new ChannelMessage();
+        msg.channelId = ChannelId;
+        msg.authorId = authorId;
+        msg.content = content;
+        msg.threadRootMessageId = (threadRootMessageId != null && threadRootMessageId > 0) ? threadRootMessageId : null;
+        msg.status = ChannelMessageStatus.NORMAL;
+        return msg;
     }
 
     @PrePersist

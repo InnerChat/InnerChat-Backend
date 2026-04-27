@@ -29,15 +29,20 @@ public class Channel {
     private String description;
 
     @Column(nullable = false)
+    @Enumerated(EnumType.STRING)
+    private ChannelType type;
+
+    @Column(nullable = false)
     private Long ownerId;
 
     @Column(nullable = false)
     private LocalDateTime createdAt;
 
-    public Channel( String name, String description, Long ownerId) {
+    public Channel( String name, String description, Long ownerId, ChannelType type) {
         this.name = name;
         this.description = description;
         this.ownerId = ownerId;
+        this.type = type;
     }
 
     @PrePersist
@@ -48,6 +53,9 @@ public class Channel {
         }
         if (createdAt == null) {
             createdAt = LocalDateTime.now();
+        }
+        if (type == null) {
+            type = ChannelType.PUBLIC;
         }
     }
 }
