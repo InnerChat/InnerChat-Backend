@@ -14,6 +14,7 @@ public class ReadDmRoomListResponse {
 
     Long dmRoomId;
     List<String> participantNameList;
+    String dmRoomType;
     Long lastMessageId;
     Long unreadCount;
 

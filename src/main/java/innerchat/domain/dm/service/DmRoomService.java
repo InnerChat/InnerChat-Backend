@@ -55,6 +55,7 @@ public class DmRoomService {
             resp.add(new ReadDmRoomListResponse(
                     row.getDmRoomId(),
                     participantNameList,
+                    row.getDmRoomType(),
                     row.getLastMessageId(),
                     row.getUnreadCount()
             ));

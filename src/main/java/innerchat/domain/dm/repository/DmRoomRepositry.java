@@ -21,6 +21,7 @@ public interface DmRoomRepositry extends JpaRepository<DmRoom, Long>, DmRoomRepo
                       and dp2.user_id <> :userId
                       and dp2.status = true
                 ), '') as participantNameListRaw,
+                dr.room_type as dmRoomType,
                 dr.last_message_id as lastMessageId,
                 (dr.last_message_id - dp.last_read_message_id) as unreadCount
             from dm_participants dp
