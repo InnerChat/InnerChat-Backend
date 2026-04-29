@@ -2,7 +2,6 @@ package innerchat.domain.channel.repository;
 
 import innerchat.domain.channel.entity.ChannelMember;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.stereotype.Repository;
 
 import java.util.List;
 
@@ -11,4 +10,6 @@ public interface ChannelMemberRepository extends JpaRepository<ChannelMember, Lo
     long countByChannelId(Long channelId);
     List<ChannelMember> findAllByChannelId(Long channelId);
     boolean existsByChannelIdAndUserId(Long channelId, Long userId);
+    void deleteByChannelIdAndUserId(Long channelId, Long userId);
+    List<ChannelMember> findAllByUserId(Long userId);
 }

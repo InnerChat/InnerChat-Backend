@@ -1,11 +1,7 @@
 package innerchat.domain.channel.controller;
 
 import innerchat.config.auth.AuthPrincipal;
-import innerchat.domain.channel.dto.ChannelMemberResponse;
-import innerchat.domain.channel.dto.CreateChannelRequest;
-import innerchat.domain.channel.dto.CreateChannelResponse;
-import innerchat.domain.channel.dto.InviteChannelRequest;
-import innerchat.domain.channel.dto.ReadChannelListResponse;
+import innerchat.domain.channel.dto.*;
 import innerchat.domain.channel.service.ChannelService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -23,6 +19,11 @@ public class ChannelController {
     @GetMapping
     public ResponseEntity<List<ReadChannelListResponse>> getChannelList(@AuthPrincipal Long userId) {
         return ResponseEntity.ok(channelService.getChannelList(userId));
+    }
+
+    @GetMapping("/me")
+    public ResponseEntity<List<ReadChannelListResponse>> getChannelListUserId(@AuthPrincipal Long userId) {
+        return ResponseEntity.ok(channelService.getChannelListByUserId(userId));
     }
 
     @PostMapping
@@ -56,6 +57,18 @@ public class ChannelController {
     @PostMapping("/{channelId}/invite")
     public ResponseEntity<Void> inviteToChannel(@AuthPrincipal Long userId, @PathVariable Long channelId, @RequestBody InviteChannelRequest request) {
         channelService.inviteChannel(userId, channelId, request.getTargetUserId());
+        return ResponseEntity.ok().build();
+    }
+
+    @DeleteMapping("/{channelId}/leave")
+    public ResponseEntity<Void> leaveChannel(@AuthPrincipal Long userId, @PathVariable Long channelId) {
+        channelService.deleteChannelMembers(userId, channelId);
+        return ResponseEntity.ok().build();
+    }
+
+    @PatchMapping("/message")
+    public ResponseEntity<Void> messageModify(@AuthPrincipal Long userId, @RequestBody MessageModifyRequest messageModifyRequest) {
+        channelService.messageModify(userId, messageModifyRequest);
         return ResponseEntity.ok().build();
     }
 }
