@@ -1,6 +1,9 @@
 package innerchat.domain.dm.service;
 
+import innerchat.domain.common.entity.MessageStatus;
 import innerchat.domain.dm.dto.request.CreateDmMessageSocketRequest;
+import innerchat.domain.dm.dto.request.DeleteDmMessageRequest;
+import innerchat.domain.dm.dto.request.UpdateDmMessageRequest;
 import innerchat.domain.dm.dto.response.DmMessageCreatedEvent;
 import innerchat.domain.dm.dto.response.ReadDmMessageCursorResponse;
 import innerchat.domain.dm.dto.response.ReadDmMessageResponse;
@@ -27,6 +30,7 @@ import java.util.List;
 @Service
 @Slf4j
 @RequiredArgsConstructor
+@Transactional
 public class DmMessageService {
 
     private static final int DEFAULT_PAGE_SIZE = 30;
@@ -37,6 +41,7 @@ public class DmMessageService {
     private final UserRepository userRepository;
     private final DmMessageRedisPublisher dmMessageRedisPublisher;
 
+    @Transactional(readOnly = true)
     public ReadDmMessageCursorResponse readDmMessages(Long dmRoomId, Long cursor) {
         List<ReadDmMessageResponse> fetched = dmMessageRepository.findMessagesByCursor(
                 dmRoomId,
@@ -56,10 +61,7 @@ public class DmMessageService {
         return new ReadDmMessageCursorResponse(messages, nextCursor, hasNext);
     }
 
-    @Transactional
     public void sendDmMessage(Long userId, CreateDmMessageSocketRequest req) {
-        log.info("DM send requested: senderUserId={}, dmRoomId={}, contentLength={}",
-                userId, req.getDmRoomId(), req.getContent() == null ? 0 : req.getContent().length());
         MessagePersistResult persistResult = createAndPersistMessage(
                 req.getDmRoomId(),
                 userId,
@@ -72,6 +74,7 @@ public class DmMessageService {
                 .orElseThrow(() -> new IllegalStateException("Author not found. userId=" + userId));
 
         DmMessageCreatedEvent event = new DmMessageCreatedEvent(
+                "MESSAGE_CREATED",
                 req.getDmRoomId(),
                 persistResult.message().getDmMessageId(),
                 persistResult.message().getAuthorId(),
@@ -83,9 +86,70 @@ public class DmMessageService {
                 persistResult.reopenedUserIdList()
         );
 
-        log.info("DM message persisted: dmRoomId={}, dmMessageId={}, reopenedUserIds={}",
-                event.getDmRoomId(), event.getDmMessageId(), event.getReopenedUserIdList());
         publishAfterCommit(event);
+    }
+
+    public void updateDmMessage(Long userId, UpdateDmMessageRequest req) {
+        DmMessage message = dmMessageRepository.findById(req.getDmMessageId())
+                .orElseThrow(() -> new RuntimeException("메시지를 찾을 수 없습니다."));
+        validateAuthorIfPresent(userId, message);
+
+        message.setContent(req.getContent());
+        message.setStatus(MessageStatus.MODIFIED);
+
+        String authorName = userRepository.findById(message.getAuthorId())
+                .map(User::getUserName)
+                .orElse("Unknown");
+
+        DmMessageCreatedEvent event = new DmMessageCreatedEvent(
+                "MESSAGE_UPDATED",
+                message.getDmRoomId(),
+                message.getDmMessageId(),
+                message.getAuthorId(),
+                authorName,
+                message.getThreadRootMessageId(),
+                message.getContent(),
+                message.getStatus(),
+                LocalDateTime.now(),
+                List.of()
+        );
+        publishAfterCommit(event);
+    }
+
+    public void deleteDmMessage(Long userId, DeleteDmMessageRequest req) {
+        DmMessage message = dmMessageRepository.findById(req.getDmMessageId())
+                .orElseThrow(() -> new RuntimeException("메시지를 찾을 수 없습니다."));
+        validateAuthorIfPresent(userId, message);
+
+        message.setStatus(MessageStatus.DELETED);
+
+        String authorName = userRepository.findById(message.getAuthorId())
+                .map(User::getUserName)
+                .orElse("Unknown");
+
+        DmMessageCreatedEvent event = new DmMessageCreatedEvent(
+                "MESSAGE_DELETED",
+                message.getDmRoomId(),
+                message.getDmMessageId(),
+                message.getAuthorId(),
+                authorName,
+                message.getThreadRootMessageId(),
+                message.getContent(),
+                message.getStatus(),
+                LocalDateTime.now(),
+                List.of()
+        );
+        publishAfterCommit(event);
+    }
+
+    private void validateAuthorIfPresent(Long userId, DmMessage message) {
+        if (userId == null) {
+            return;
+        }
+
+        if (!userId.equals(message.getAuthorId())) {
+            throw new IllegalArgumentException("작성자만 메시지를 수정/삭제할 수 있습니다.");
+        }
     }
 
     private void publishAfterCommit(DmMessageCreatedEvent event) {
@@ -139,10 +203,6 @@ public class DmMessageService {
             participant.setStatus(true);
             participant.setJoinendAt(LocalDateTime.now());
             reopenedUserIds.add(participant.getUserId());
-        }
-
-        if (!reopenedUserIds.isEmpty()) {
-            log.info("DM participants reopened: dmRoomId={}, reopenedUserIds={}", dmRoomId, reopenedUserIds);
         }
         return reopenedUserIds;
     }
